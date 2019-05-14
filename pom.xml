@@ -1,6 +1,5 @@
-<?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<?xml version="1.0" ?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.kabir.quarkus</groupId>
   <artifactId>blog-quarkus-ui-development</artifactId>
@@ -11,6 +10,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <!-- Versions for added plugins -->
+    <version.frontend-maven-plugin>1.7.5</version.frontend-maven-plugin>
+    <version.resources-plugin>3.1.0</version.resources-plugin>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -70,6 +72,42 @@
           </systemProperties>
         </configuration>
       </plugin>
+      
+      <!-- ADDED PLUGINS -->
+      <!-- Used to run the angular build -->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <!-- Use the latest released version:
+          https://repo1.maven.org/maven2/com/github/eirslett/frontend-maven-plugin/ -->
+        <version>${version.frontend-maven-plugin}</version>
+        <configuration>
+          <workingDirectory>webapp</workingDirectory>
+        </configuration>
+      </plugin>
+      <!-- Copy the built webapp to the directory used by Quarkus -->
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>${version.resources-plugin}</version>
+        <executions>
+          <execution>
+            <id>copy-resources</id>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${basedir}/target/classes/META-INF/resources/</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>webapp/dist/webapp</directory>
+                  <filtering>false</filtering>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <profiles>
@@ -110,6 +148,168 @@
                   <systemProperties>
                     <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                   </systemProperties>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        Installs node and yarn in the webapp/node and webapp/node_modules folders respectively.
+        Run 'mvn package -Dui.deps':
+          * the first time you have checked out the source.
+          * whenever the dependencies have been changed in package.json (delete the webapp/node_modules folder first!)
+      -->
+      <id>Install node and yarn</id>
+      <activation>
+        <property>
+          <name>ui.deps</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <!--
+                  Install node and yarn for the plugin to have a copy.
+                -->
+                <id>install node and yarn</id>
+                <goals>
+                  <goal>install-node-and-yarn</goal>
+                </goals>
+                <configuration>
+                  <!-- Make sure these match the version you installed on your system -->
+                  <nodeVersion>v11.10.0</nodeVersion>
+                  <yarnVersion>v1.13.0</yarnVersion>
+                </configuration>
+              </execution>
+              <execution>
+                <!--
+                  Run yarn install when having updated dependencies
+                  -->
+                <id>yarn install</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <!-- Optional configuration which provides for running any yarn command -->
+                <configuration>
+                  <arguments>install</arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        Since building the ui is slightly time-consuming, and not all changes necessarily affect the ui, turn on
+        building the ui explicitly by running 'atlas-package -Dob.ui.dev'.
+        
+        This is faster than the production build as it does not perform all optimisations at build time.
+      -->
+      <id>Build the UI</id>
+      <activation>
+        <property>
+          <name>ui.dev</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>yarn run build</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <arguments>run build --output-hashing=all</arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        !!!! USE THIS FOR PRODUCTION BUILDS - IT RESULTS IN A MUCH SMALLER SIZE!!!!
+
+        Since building the ui this way is very time-consuming, and not all changes necessarily affect the ui, turn on
+        building the ui explicitly by running 'atlas-package -Dob.ui'
+      -->
+      <id>Build the UI with AOT</id>
+      <activation>
+        <property>
+          <name>ui</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <!--
+                  Uses webpack to bundle the application as set up in package.json
+                -->
+                <id>yarn run build</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <arguments>run build --output-hashing=all --prod --aot --configuration=production</arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>Test the UI</id>
+      <activation>
+        <property>
+          <name>rt.ui.tests</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.github.eirslett</groupId>
+            <artifactId>frontend-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <!--
+                  Run the linter
+                -->
+                <id>yarn run lint</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <arguments>run lint</arguments>
+                </configuration>
+              </execution>
+              <execution>
+                <!--
+                  Run the tests
+                -->
+                <id>yarn run test:travis-headless</id>
+                <goals>
+                  <goal>yarn</goal>
+                </goals>
+                <configuration>
+                  <arguments>run test:travis-headless</arguments>
                 </configuration>
               </execution>
             </executions>
