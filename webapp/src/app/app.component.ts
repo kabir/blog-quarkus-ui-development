@@ -23,11 +23,19 @@ export class AppComponent {
     In <b>default</b> component. 
     <a [routerLink]="['/other']">Other</a> | 
     <a [routerLink]="['/rest']">Rest</a> |
-    <a href="/servlet/make-external-call">External</a>
+    <a href="{{externalUrl}}">External</a>
   `,
   styles: []
 })
 export class DefaultComponent {
+  externalUrl = '/servlet/make-external-call';
+
+  constructor() {
+    if (window.location.port === "4200") {
+      this.externalUrl = "http://localhost:8080" + this.externalUrl;
+    }
+  }
+
 }
 
 @Component({

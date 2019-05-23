@@ -23,6 +23,11 @@ public class SampleServlet extends HttpServlet {
         } else if (path.equals("/callback")) {
             // Redirect back to a path controlled by the Angular client
             String redirectPath = "/clientCallback";
+
+            boolean proxy = Boolean.getBoolean("ui.proxy");
+            if (proxy) {
+                redirectPath = "http://localhost:4200" + redirectPath;
+            }
             resp.sendRedirect(redirectPath);
         } else {
             resp.sendError(404);
