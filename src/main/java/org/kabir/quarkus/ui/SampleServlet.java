@@ -1,6 +1,7 @@
 package org.kabir.quarkus.ui;
 
 import java.io.IOException;
+import java.net.Socket;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -23,9 +24,23 @@ public class SampleServlet extends HttpServlet {
         } else if (path.equals("/callback")) {
             // Redirect back to a path controlled by the Angular client
             String redirectPath = "/clientCallback";
+
+            boolean proxy = Boolean.getBoolean("ui.proxy");
+            if (proxy && checkProxyIsRunning()) {
+                redirectPath = "http://localhost:4200" + redirectPath;
+            }
             resp.sendRedirect(redirectPath);
         } else {
             resp.sendError(404);
         }
     }
+
+    private boolean checkProxyIsRunning() {
+        try (Socket s = new Socket("localhost", 4200)) {
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
 }
+
