@@ -1,6 +1,6 @@
 == Blog post example code
 
-Example code for my blog post at https://quarkus.io/blog/quarkus-and-angular-ui-development-mode/. It consists of 
+Example code for my blog post at https://quarkus.io/blog/quarkus-and-angular-ui-development-mode/. It consists of
 a series of 6 steps tracking the steps taken in the blog. They are all tagged as
 
 * https://github.com/kabir/blog-quarkus-ui-development/tree/step-0 (the baseline for the real work)
@@ -231,8 +231,9 @@ public class AngularRouteFilter extends HttpFilter {
                 // We could not find the resource, i.e. it is not anything known to the server (i.e. it is not a REST
                 // endpoint or a servlet), and does not look like a file so try handling it in the front-end routes
                 // and reset the response status code to 200.
-                response.setStatus(200);    
+                response.setStatus(200);
                 request.getRequestDispatcher("/").forward(request, response);
+                response.getOutputStream().close();
             }
         }
     }
@@ -240,6 +241,7 @@ public class AngularRouteFilter extends HttpFilter {
 ----
 
 All this does is try to invoke the request normally via the `doFilter()` call. If the resource path could not be found, it is not any of the REST endpoints or servlets installed in the application. If it does not look like a file, we assume it is an Angular route.
+We need to close the output stream after forwarding, otherwise you will get a 404 on our client side routes when running in production.
 
 To try it out, package and start the application by running:
 [source,bash]
