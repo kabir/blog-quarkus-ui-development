@@ -13,6 +13,7 @@ a series of 6 steps tracking the steps taken in the blog. They are all tagged as
 
 To see the changes done in e.g step 4, go to https://github.com/kabir/blog-quarkus-ui-development/compare/step-4...step-5
 
+Finally the master branch contains bug fixes coming from community contributions. They will come after 'step-6' since redoing all the tags to put such fixes into the right place in the sequence is just too much work :)
 
 == Quarkus and Angular UI Development
 The following does a step by step walkthrough of how to arrive at the desired result.
