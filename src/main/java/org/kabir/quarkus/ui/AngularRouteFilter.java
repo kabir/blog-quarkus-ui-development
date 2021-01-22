@@ -33,8 +33,9 @@ public class AngularRouteFilter extends HttpFilter {
                 // We could not find the resource, i.e. it is not anything known to the server (i.e. it is not a REST
                 // endpoint or a servlet), and does not look like a file so try handling it in the front-end routes
                 // and reset the response status code to 200.
-                response.setStatus(200);    
+                response.setStatus(200);
                 request.getRequestDispatcher("/").forward(request, response);
+                response.getOutputStream().close();
             }
         }
     }
